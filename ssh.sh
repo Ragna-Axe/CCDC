@@ -9,7 +9,7 @@ if service sshd status > /dev/null; then
 		sed -i '1s;^;UsePAM no\n;' /etc/ssh/sshd_config
 	fi
 
- 	# Banner
+ 	# "Authorized access only" banner for SSH
 	echo "Authorized access only" > /etc/ssh/ssh_banner.txt
 	sed -i '1s;^;Banner /etc/ssh/ssh_banner.txt\n;' /etc/ssh/sshd_config
  

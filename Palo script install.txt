@@ -1,0 +1,12 @@
+#Github transfer of congif file
+git clone https://github.com/Ragna-Axe/CCDC
+
+scp palo_init.py admin@firewall_ip:/path/on/firewall/
+
+#palo interface
+> configure
+> run script.py
+exit
+commit
+save config
+exit

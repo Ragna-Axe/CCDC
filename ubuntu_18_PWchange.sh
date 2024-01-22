@@ -6,7 +6,7 @@ for username in $(awk -F: '$3 >= 1000 && $1 != "root" {print $1}' /etc/passwd); 
 done
 
 # Change root password
-echo "root:GenuineGMparts!22" | chpasswd
+echo "root:AlexTech2024CCDC!" | chpasswd
 
 # Change password for other system accounts if needed
 # echo "username:new_password" | chpasswd

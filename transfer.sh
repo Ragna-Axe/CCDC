@@ -9,3 +9,4 @@ https://transfer.sh/9WcHWcHHiu/hello.txt
 
 #Upload from web
 Drag your files here, or click to browser
+https://transfer.sh

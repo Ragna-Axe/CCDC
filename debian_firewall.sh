@@ -14,6 +14,7 @@ ufw default allow outgoing
 #ufw allow ssh
 ufw allow 53/udp   # DNS
 ufw allow 123/udp  # NTP
+ufw allow 514/udp  # Splunk
 
 # Additional rules based on your specific requirements
 # ufw allow <port>/<protocol>

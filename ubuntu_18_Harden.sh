@@ -13,7 +13,7 @@ if ! command -v ufw &>/dev/null; then
 fi
 
 # Enable the firewall
-ufw enable
+#ufw enable
 
 # Allow SSH (replace 22 with your actual SSH port if changed)
 ufw allow 22/tcp

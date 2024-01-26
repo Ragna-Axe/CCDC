@@ -16,11 +16,11 @@ fi
 #ufw enable
 
 # Allow SSH (replace 22 with your actual SSH port if changed)
-ufw allow 22/tcp
+#ufw allow 22/tcp
 
 # Allow essential services (adjust as needed)
-ufw allow 80/tcp    # HTTP
-ufw allow 443/tcp   # HTTPS
+#ufw allow 80/tcp    # HTTP
+#ufw allow 443/tcp   # HTTPS
 
 # Block common attack ports
 ufw deny 23         # Telnet

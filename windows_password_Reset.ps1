@@ -9,7 +9,7 @@ $users = Get-ADUser -filter * -Properties SamAccountName
 # Set AD Account Passwords: 
 foreach($user in $users)
     {
-        Set-ADAccountPassword -Identity $user.SamAccountName -Reset -NewPassword (ConvertTo-SecureString -AsPlainText "GenuineGMparts!22" -Force)
+        Set-ADAccountPassword -Identity $user.SamAccountName -Reset -NewPassword (ConvertTo-SecureString -AsPlainText "ATCCccdc2024!" -Force)
         Write-Host "Password set for: " $user.SamAccountName
     }
 

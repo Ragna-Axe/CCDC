@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#DO NOT USE THIS ON WEBMAIL!!!!
 # Whitelist of users to keep (e.g., current user or important accounts)
 WHITELIST=("root" "sysadmin" "$USER")
 

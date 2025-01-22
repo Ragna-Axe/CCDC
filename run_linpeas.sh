@@ -5,11 +5,22 @@ GREEN="\033[1;32m"
 RED="\033[1;31m"
 RESET="\033[0m"
 
-# Check if the user is running as root
+# Check if the script is being run as root
 if [ "$EUID" -ne 0 ]; then
   echo -e "${RED}[ERROR] Please run this script as root.${RESET}"
   exit 1
 fi
+
+# Determine the original user (not root)
+ORIGINAL_USER=$(logname 2>/dev/null || echo $SUDO_USER)
+
+if [ -z "$ORIGINAL_USER" ]; then
+  echo -e "${RED}[ERROR] Could not determine the original user.${RESET}"
+  exit 1
+fi
+
+ORIGINAL_HOME=$(getent passwd "$ORIGINAL_USER" | cut -d: -f6)
+DESKTOP_DIR="$ORIGINAL_HOME/Desktop"
 
 # Define the LinPEAS download URL
 LINPEAS_URL="https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh"
@@ -35,18 +46,20 @@ fi
 echo -e "${GREEN}[INFO] Making LinPEAS executable...${RESET}"
 chmod +x "$LINPEAS_PATH"
 
-# Define the output file location
-DESKTOP_DIR="$HOME/Desktop"
-OUTPUT_FILE="$DESKTOP_DIR/linpeas_output_$(date +%Y%m%d_%H%M%S).txt"
-
 # Ensure the Desktop directory exists
 if [ ! -d "$DESKTOP_DIR" ]; then
-  echo -e "${GREEN}[INFO] Desktop directory not found, creating it.${RESET}"
+  echo -e "${GREEN}[INFO] Desktop directory not found for $ORIGINAL_USER. Creating it.${RESET}"
   mkdir -p "$DESKTOP_DIR"
 fi
 
-# Run LinPEAS and redirect output to the file
+# Define the output file location
+OUTPUT_FILE="$DESKTOP_DIR/linpeas_output_$(date +%Y%m%d_%H%M%S).txt"
+
+# Run LinPEAS and save the output
 echo -e "${GREEN}[INFO] Running LinPEAS and saving output to: $OUTPUT_FILE${RESET}"
 "$LINPEAS_PATH" | tee "$OUTPUT_FILE"
+
+# Adjust file permissions so the original user can access it
+chown "$ORIGINAL_USER:$ORIGINAL_USER" "$OUTPUT_FILE"
 
 echo -e "${GREEN}[INFO] LinPEAS execution completed. Output saved to: $OUTPUT_FILE${RESET}"

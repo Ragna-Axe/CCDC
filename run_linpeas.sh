@@ -19,8 +19,8 @@ if [ -z "$ORIGINAL_USER" ]; then
   exit 1
 fi
 
+# Get the home directory of the original user
 ORIGINAL_HOME=$(getent passwd "$ORIGINAL_USER" | cut -d: -f6)
-DESKTOP_DIR="$ORIGINAL_HOME/Desktop"
 
 # Define the LinPEAS download URL
 LINPEAS_URL="https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh"
@@ -46,14 +46,8 @@ fi
 echo -e "${GREEN}[INFO] Making LinPEAS executable...${RESET}"
 chmod +x "$LINPEAS_PATH"
 
-# Ensure the Desktop directory exists
-if [ ! -d "$DESKTOP_DIR" ]; then
-  echo -e "${GREEN}[INFO] Desktop directory not found for $ORIGINAL_USER. Creating it.${RESET}"
-  mkdir -p "$DESKTOP_DIR"
-fi
-
-# Define the output file location
-OUTPUT_FILE="$DESKTOP_DIR/linpeas_output_$(date +%Y%m%d_%H%M%S).txt"
+# Define the output file location in the user's home directory
+OUTPUT_FILE="$ORIGINAL_HOME/linpeas_output_$(date +%Y%m%d_%H%M%S).txt"
 
 # Run LinPEAS and save the output
 echo -e "${GREEN}[INFO] Running LinPEAS and saving output to: $OUTPUT_FILE${RESET}"

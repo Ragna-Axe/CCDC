@@ -1,3 +1,6 @@
+#CCDC POWERSHELL 2019 DOCKER
+
+```powershell
 # Define constants
 $NewPassword = "ATCCccdc2025!"
 $FirewallAllowedPorts = @(80, 443)
@@ -6,22 +9,23 @@ $ServiceLogPath = "C:\DisabledServicesLog.txt"
 
 # Gather all local users and log them
 Write-Output "Gathering and logging all local users..."
-Get-LocalUser | ForEach-Object {
-    Add-Content -Path $UserLogPath -Value "User: $($_.Name), Enabled: $($_.Enabled)"
+$Users = net user | ForEach-Object { ($_ -split '\s{2,}')[0] } | Where-Object { $_ -notmatch "^(User|accounts|-----)$" }
+foreach ($User in $Users) {
+    Add-Content -Path $UserLogPath -Value "User: $User"
 }
 
 # Collect all local user accounts and remove non-native ones
-Get-LocalUser | ForEach-Object {
-    if ($_ -notmatch "^DefaultAccount|WDAGUtilityAccount|Guest|Administrator$") {
-        Write-Output "Removing non-native account: $($_.Name)"
-        Remove-LocalUser -Name $_.Name -ErrorAction SilentlyContinue
+foreach ($User in $Users) {
+    if ($User -notmatch "^DefaultAccount|WDAGUtilityAccount|Guest|Administrator$") {
+        Write-Output "Removing non-native account: $User"
+        net user $User /delete
     }
 }
 
 # Reset passwords for all users
-Get-LocalUser | ForEach-Object {
-    Write-Output "Resetting password for user: $($_.Name)"
-    $_ | Set-LocalUser -Password (ConvertTo-SecureString $NewPassword -AsPlainText -Force)
+foreach ($User in $Users) {
+    Write-Output "Resetting password for user: $User"
+    net user $User $NewPassword
 }
 
 # Revoke login certificates and tokens
@@ -111,10 +115,14 @@ Set-Service -Name "NfsSvr" -StartupType Disabled -ErrorAction SilentlyContinue
 
 # Run Windows updates at the end
 Write-Output "Running Windows Updates..."
-Install-WindowsUpdate -AcceptAll -IgnoreReboot -ErrorAction SilentlyContinue
+wuauclt /detectnow
+wuauclt /updatenow
 
 # Clear password from memory
 Write-Output "Clearing password from memory..."
 $NewPassword = $null
 
 Write-Output "Hardening complete."
+```
+
+Feel free to test it and let me know if there are further adjustments needed!

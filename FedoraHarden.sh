@@ -7,7 +7,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Update the system
-dnf update -y
+yum update -y
 
 # Set strong passwords for all users (excluding root)
 awk -F: '$3 >= 1000 && $1 != "root" {print $1}' /etc/passwd | xargs -I {} sudo chpasswd <<< "{}:ATCCccdc2025!" 
@@ -21,14 +21,14 @@ sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_
 systemctl restart sshd
 
 # Install and configure a firewall (firewalld)
-dnf install firewalld -y
+yum install firewalld -y
 systemctl start firewalld
 systemctl enable firewalld
 firewall-cmd --zone=public --add-service=ssh --permanent
 firewall-cmd --reload
 
 # Enable and configure automatic security updates
-dnf install dnf-automatic -y
+yum install dnf-automatic -y
 systemctl enable --now dnf-automatic.timer
 
 # Disable unnecessary services
@@ -36,14 +36,14 @@ systemctl disable avahi-daemon
 systemctl disable cups
 
 # Remove unnecessary packages
-dnf autoremove -y
+yum autoremove -y
 
 # Disable unused network protocols
 echo "install dccp /bin/true" > /etc/modprobe.d/disable-dccp.conf
 echo "install sctp /bin/true" > /etc/modprobe.d/disable-sctp.conf
 
 # Enable auditd for system auditing
-dnf install audit -y
+yum install audit -y
 systemctl enable auditd
 systemctl start auditd
 

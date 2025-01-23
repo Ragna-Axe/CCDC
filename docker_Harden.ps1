@@ -1,6 +1,6 @@
 #CCDC POWERSHELL 2019 DOCKER
 
-```powershell
+#powershell
 # Define constants
 $NewPassword = "ATCCccdc2025!"
 $FirewallAllowedPorts = @(80, 443)

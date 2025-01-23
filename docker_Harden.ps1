@@ -1,28 +1,14 @@
-#CCDC POWERSHELL 2019 DOCKER
-
-#powershell
 # Define constants
 $NewPassword = "ATCCccdc2025!"
-$FirewallAllowedPorts = @(80, 443)
+$FirewallAllowedPorts = @(80, 443, 53, 8000)
 $UserLogPath = "C:\UserAuditLog.txt"
 $ServiceLogPath = "C:\DisabledServicesLog.txt"
 
 # Gather all local users and log them
 Write-Output "Gathering and logging all local users..."
-#matts update below-->$Users = net user | ForEach-Object { ($_ -split '\s{2,}')[0] } | Where-Object { $_ -notmatch "^(User|accounts|-----)$" }
-$netuse = net user 
-$users = ($netuse -split "`n")[2..($netuse.Length - 3)] -join " " -split '\s+'
+$Users = net user | ForEach-Object { ($_ -split '\s{2,}')[0] } | Where-Object { $_ -notmatch "^(User|accounts|-----)$" }
 foreach ($User in $Users) {
     Add-Content -Path $UserLogPath -Value "User: $User"
-    Write-Output "Local User found: $user"
-}
-
-# Collect all local user accounts and remove non-native ones
-foreach ($User in $Users) {
-    if ($User -notmatch "^DefaultAccount|WDAGUtilityAccount|Guest|Administrator$") {
-        Write-Output "Removing non-native account: $User"
-        net user $User /delete
-    }
 }
 
 # Reset passwords for all users
@@ -43,16 +29,17 @@ $certStore | ForEach-Object {
 Write-Output "Configuring Windows Firewall..."
 New-NetFirewallRule -DisplayName "Allow HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
 New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow -ErrorAction SilentlyContinue
-New-NetFirewallRule -DisplayName "Allow DNS" -Direction Outbound -Protocol UDP -LocalPort 53 -Action Allow
-New-NetFirewallRule -DisplayName "Allow Splunk Port" -Direction Outbound -Protocol TCP -LocalPort 8000 -Action Allow
-New-NetFirewallRule -DisplayName "Allow GitHub" -Direction Outbound -Protocol TCP -RemoteAddress "140.82.113.0/24" -Action Allow
+New-NetFirewallRule -DisplayName "Allow DNS" -Direction Inbound -Protocol UDP -LocalPort 53 -Action Allow -ErrorAction SilentlyContinue
+New-NetFirewallRule -DisplayName "Allow Splunk Port" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow -ErrorAction SilentlyContinue
 
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
 Set-NetFirewallProfile -Profile Domain,Public,Private -DefaultInboundAction Block -DefaultOutboundAction Block
 
-# Allow outbound traffic on ports 80 and 443 for updates
+# Allow outbound traffic on ports 80, 443, 53, and 8000 for updates
 New-NetFirewallRule -DisplayName "Allow HTTP Outbound" -Direction Outbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
 New-NetFirewallRule -DisplayName "Allow HTTPS Outbound" -Direction Outbound -Protocol TCP -LocalPort 443 -Action Allow -ErrorAction SilentlyContinue
+New-NetFirewallRule -DisplayName "Allow DNS Outbound" -Direction Outbound -Protocol UDP -LocalPort 53 -Action Allow -ErrorAction SilentlyContinue
+New-NetFirewallRule -DisplayName "Allow Splunk Port Outbound" -Direction Outbound -Protocol TCP -LocalPort 8000 -Action Allow -ErrorAction SilentlyContinue
 
 # Enable audit logging
 Write-Output "Enabling audit logging..."
@@ -129,7 +116,3 @@ Write-Output "Clearing password from memory..."
 $NewPassword = $null
 
 Write-Output "Hardening complete."
-```
-
-Feel free to test it and let me know if there are further adjustments needed!
-```

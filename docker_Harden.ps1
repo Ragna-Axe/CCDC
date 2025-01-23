@@ -1,0 +1,120 @@
+# Define constants
+$NewPassword = "ATCCccdc2025!"
+$FirewallAllowedPorts = @(80, 443)
+$UserLogPath = "C:\UserAuditLog.txt"
+$ServiceLogPath = "C:\DisabledServicesLog.txt"
+
+# Gather all local users and log them
+Write-Output "Gathering and logging all local users..."
+Get-LocalUser | ForEach-Object {
+    Add-Content -Path $UserLogPath -Value "User: $($_.Name), Enabled: $($_.Enabled)"
+}
+
+# Collect all local user accounts and remove non-native ones
+Get-LocalUser | ForEach-Object {
+    if ($_ -notmatch "^DefaultAccount|WDAGUtilityAccount|Guest|Administrator$") {
+        Write-Output "Removing non-native account: $($_.Name)"
+        Remove-LocalUser -Name $_.Name -ErrorAction SilentlyContinue
+    }
+}
+
+# Reset passwords for all users
+Get-LocalUser | ForEach-Object {
+    Write-Output "Resetting password for user: $($_.Name)"
+    $_ | Set-LocalUser -Password (ConvertTo-SecureString $NewPassword -AsPlainText -Force)
+}
+
+# Revoke login certificates and tokens
+Write-Output "Revoking login certificates and tokens..."
+$certStore = Get-ChildItem Cert:\LocalMachine\My
+$certStore | ForEach-Object {
+    Write-Output "Revoking certificate: $($_.Subject)"
+    Remove-Item $_.PSPath -Force
+}
+
+# Configure and enable Windows Firewall
+Write-Output "Configuring Windows Firewall..."
+New-NetFirewallRule -DisplayName "Allow HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
+New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow -ErrorAction SilentlyContinue
+
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
+Set-NetFirewallProfile -Profile Domain,Public,Private -DefaultInboundAction Block -DefaultOutboundAction Block
+
+# Allow outbound traffic on ports 80 and 443 for updates
+New-NetFirewallRule -DisplayName "Allow HTTP Outbound" -Direction Outbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
+New-NetFirewallRule -DisplayName "Allow HTTPS Outbound" -Direction Outbound -Protocol TCP -LocalPort 443 -Action Allow -ErrorAction SilentlyContinue
+
+# Enable audit logging
+Write-Output "Enabling audit logging..."
+AuditPol /set /category:* /success:enable /failure:enable
+
+# Disable unused services and log them
+Write-Output "Disabling unnecessary services..."
+$DisableServices = @("wuauserv", "bits", "Dnscache")
+foreach ($service in $DisableServices) {
+    Write-Output "Disabling service: $service"
+    Add-Content -Path $ServiceLogPath -Value "Disabled service: $service"
+    Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
+    Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
+}
+
+# Disable unused protocols (e.g., SMBv1)
+Write-Output "Disabling SMBv1..."
+Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force
+
+# Remove rogue scheduled tasks
+Write-Output "Checking for unauthorized scheduled tasks..."
+Get-ScheduledTask | Where-Object {$_.TaskPath -notlike "\Microsoft*"} | ForEach-Object {
+    Write-Output "Removing rogue scheduled task: $($_.TaskName)"
+    Unregister-ScheduledTask -TaskName $_.TaskName -Confirm:$false
+}
+
+# Remove suspicious startup programs
+Write-Output "Checking and removing startup programs..."
+$StartupLocations = @(
+    "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run",
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+)
+foreach ($loc in $StartupLocations) {
+    Get-ItemProperty -Path $loc | ForEach-Object {
+        Write-Output "Removing startup entry: $($_.PSChildName)"
+        Remove-ItemProperty -Path $loc -Name $_.PSChildName -ErrorAction SilentlyContinue
+    }
+}
+
+# Set secure DNS settings
+Write-Output "Setting secure DNS..."
+Set-DnsClientServerAddress -InterfaceAlias "Ethernet*" -ServerAddresses @("8.8.8.8", "8.8.4.4")
+
+# Disable File Sharing and Network Discovery
+Write-Output "Disabling File Sharing and Network Discovery..."
+
+# Disable File and Printer Sharing through Firewall
+Write-Output "Disabling File and Printer Sharing through Firewall..."
+Disable-NetAdapterBinding -Name "*" -ComponentID ms_server -ErrorAction SilentlyContinue
+
+# Remove Administrative Shares
+Write-Output "Removing administrative shares..."
+Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" -Name "AutoShareWks" -Value 0 -Force
+
+# Disable Network Discovery
+Write-Output "Disabling Network Discovery..."
+Set-Service -Name "fdPHost" -StartupType Disabled -ErrorAction SilentlyContinue
+Set-Service -Name "fdResPub" -StartupType Disabled -ErrorAction SilentlyContinue
+Set-Service -Name "upnphost" -StartupType Disabled -ErrorAction SilentlyContinue
+Set-Service -Name "SSDPSRV" -StartupType Disabled -ErrorAction SilentlyContinue
+
+# Disable NFS Services if installed
+Write-Output "Disabling NFS Services..."
+Set-Service -Name "NfsClnt" -StartupType Disabled -ErrorAction SilentlyContinue
+Set-Service -Name "NfsSvr" -StartupType Disabled -ErrorAction SilentlyContinue
+
+# Run Windows updates at the end
+Write-Output "Running Windows Updates..."
+Install-WindowsUpdate -AcceptAll -IgnoreReboot -ErrorAction SilentlyContinue
+
+# Clear password from memory
+Write-Output "Clearing password from memory..."
+$NewPassword = $null
+
+Write-Output "Hardening complete."

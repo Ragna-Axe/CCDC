@@ -9,9 +9,12 @@ $ServiceLogPath = "C:\DisabledServicesLog.txt"
 
 # Gather all local users and log them
 Write-Output "Gathering and logging all local users..."
-$Users = net user | ForEach-Object { ($_ -split '\s{2,}')[0] } | Where-Object { $_ -notmatch "^(User|accounts|-----)$" }
+#matts update below-->$Users = net user | ForEach-Object { ($_ -split '\s{2,}')[0] } | Where-Object { $_ -notmatch "^(User|accounts|-----)$" }
+$netuse = net user 
+$users = ($netuse -split "`n")[2..($netuse.Length - 3)] -join " " -split '\s+'
 foreach ($User in $Users) {
     Add-Content -Path $UserLogPath -Value "User: $User"
+    Write-Output "Local User found: $user"
 }
 
 # Collect all local user accounts and remove non-native ones
@@ -129,3 +132,4 @@ Write-Output "Hardening complete."
 ```
 
 Feel free to test it and let me know if there are further adjustments needed!
+```

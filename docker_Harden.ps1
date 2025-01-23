@@ -102,6 +102,8 @@ Set-Service -Name "NfsClnt" -StartupType Disabled -ErrorAction SilentlyContinue
 Set-Service -Name "NfsSvr" -StartupType Disabled -ErrorAction SilentlyContinue
 
 # Run Windows updates at the end
+Set-Service -Name wuauserv -StartupType Automatic
+Set-Service -Name wuauserv -Status Running
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
 Install-Module -Name PSWindowsUpdate -Force
 Import-Module PSWindowsUpdate

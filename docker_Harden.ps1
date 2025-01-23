@@ -40,6 +40,8 @@ $certStore | ForEach-Object {
 Write-Output "Configuring Windows Firewall..."
 New-NetFirewallRule -DisplayName "Allow HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
 New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow -ErrorAction SilentlyContinue
+New-NetFirewallRule -DisplayName "Allow Splunk Port" -Direction Outbound -Protocol TCP -LocalPort 8000 -Action Allow
+New-NetFirewallRule -DisplayName "Allow GitHub" -Direction Outbound -Protocol TCP -RemoteAddress "140.82.113.0/24" -Action Allow
 
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
 Set-NetFirewallProfile -Profile Domain,Public,Private -DefaultInboundAction Block -DefaultOutboundAction Block
